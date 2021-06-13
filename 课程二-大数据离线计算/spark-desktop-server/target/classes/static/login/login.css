@@ -1,0 +1,18 @@
+#login-container {
+    width: 35%;
+    height: 30%;
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+#login-tab {
+    position: absolute;
+    left: 8%;
+}
+#register-tab {
+    position: absolute;
+    right: 8%;
+}

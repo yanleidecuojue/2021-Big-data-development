@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<link rel="stylesheet" th:href="@{/layui/css/layui.css}"/>
+<link rel="stylesheet" th:href="@{/edit-connection/edit-connection.css}"/>
+<script type="text/javascript" th:src="@{/layui/layui.js}"></script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑连接</title>
+</head>
+<body>
+<form class="layui-form" action="">
+    <div class="layui-form-item">
+        <label class="layui-form-label">连接名</label>
+        <div class="layui-input-block">
+            <input type="text" name="connection-name" required lay-verify="required" placeholder="请输入连接名称"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">主机</label>
+        <div class="layui-input-block">
+            <input type="text" name="connection-host" required lay-verify="required" placeholder="请输入主机名称"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">端口</label>
+        <div class="layui-input-block">
+            <input type="text" name="connection-port" required lay-verify="required" placeholder="请输入端口名称"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">初始数据库</label>
+        <div class="layui-input-block">
+            <input type="text" name="connection-database-name" required lay-verify="required" placeholder="请输入初始数据库名称"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">用户名</label>
+        <div class="layui-input-block">
+            <input type="text" name="connection-username" required lay-verify="required" placeholder="请输入用户名"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">密码</label>
+        <div class="layui-input-inline">
+            <input type="password" name="connection-password" required lay-verify="required" placeholder="请输入密码"
+                   autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn layui-btn-normal" lay-submit lay-filter="test-connection">测试连接</button>
+            <button id="create-connection-ok" class="layui-btn layui-btn-normal" lay-submit lay-filter="create-connection-ok">确定</button>
+        </div>
+    </div>
+</form>
+<script>
+    //Demo
+    layui.use(['form', 'cookie'], function () {
+        let form = layui.form;
+        let $ = layui.$
+
+        //监听提交
+        form.on('submit(test-connection)', function (data) {
+            $.ajax({
+                url: "http://localhost:8080/api/test-spark-connection",
+                data: data.field,
+                headers: {token: $.cookie('token')},
+                type: "post",
+                success: function (data) {
+                    layer.msg(data.msg)
+                }
+            })
+            return false;
+        });
+
+        //监听提交
+        form.on('submit(create-connection-ok)', function (data) {
+            $.ajax({
+                url: "http://localhost:8080/api/create-connection",
+                data: data.field,
+                headers: {token: $.cookie('token')},
+                type: "post",
+                success: function (data) {
+                    if(data.code === 405) {
+                        layer.msg(data.msg)
+                    }
+                    else {
+                        window.parent.location.reload();
+                    }
+                }
+            })
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

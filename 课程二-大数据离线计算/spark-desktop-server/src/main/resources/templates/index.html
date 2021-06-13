@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<link rel="stylesheet" th:href="@{/layui/css/layui.css}"/>
+<link rel="stylesheet" th:href="@{/index/index.css}"/>
+<script type="text/javascript" th:src="@{/layui/layui.js}"></script>
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Spark Browser</title>
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo layui-bg-black">Spark Browser</div>
+        <ul class="layui-nav layui-layout-left">
+            <li class="layui-nav-item"><a class="" id="create-connection">创建连接</a></li>
+            <li class="layui-nav-item"><a class="" id="create-query">新建查询</a></li>
+        </ul>
+    </div>
+
+    <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+            <ul class="layui-nav layui-nav-tree" id="dynamic-nav">
+            </ul>
+        </div>
+    </div>
+    <div class="layui-tab" lay-filter="connection-tab" lay-allowclose="true" style="margin-left: 200px; margin-top: 60px">
+        <ul class="layui-tab-title"></ul>
+        <div style="padding: 0px" class="layui-tab-content"></div>
+    </div>
+
+    <div class="layui-footer">
+        <p>Copyright &copy; 2020-2021 licona.club All Rights Reserved.</p>
+        <p>
+            Licona&nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank"
+            >陇ICP备20000364号</a
+            >
+        </p>
+    </div>
+</div>
+
+
+<script>
+    layui.use(['element', 'layer', 'cookie', 'util', 'form'], function () {
+        let element = layui.element,
+            layer = layui.layer,
+            $ = layui.jquery,
+            util = layui.util;
+
+        let connectionMap = new Map()
+        let currentConnectionIndex = null
+        let currentConnectionName = null
+        // 检查token是否存在，如果没有定位到登录页面重新获取token
+        if ($.cookie('token') == null) {
+            window.location.href = "/login"
+        }
+
+        // 获取当前用户的所有连接信息并在侧边栏进行渲染
+        let queryConnection = $.ajax({
+            url: "/api/query-connections",
+            headers: {token: $.cookie('token')},
+            type: "post",
+            success: function (data) {
+                if (data.code === 200) {
+                    let navHtml = data.connections[0]
+                    for (let i = 0; i < navHtml.length; i++) {
+                        let connectionName = navHtml[i].connectionName
+                        $(window.document).find("#dynamic-nav")
+                            .append('<li lay-database-event="demo" id="' + connectionName + '" class="layui-nav-item sidebar-connection" data-url="main" data-id=' + i + ' data-title=' + connectionName + '><a href="javascript:;">' + connectionName + '</a></li>');
+
+                        let tempMap = new Map()
+                        tempMap.set('connection_host', navHtml[i].connectionHost)
+                        tempMap.set('connection_port', navHtml[i].connectionPort)
+                        tempMap.set('connection_database_name', navHtml[i].connectionDatabaseName)
+                        tempMap.set('connection_username', navHtml[i].connectionUsername)
+                        tempMap.set('connection_password', navHtml[i].connectionPassword)
+                        tempMap.set('has_databases_rendered', false)
+                        connectionMap.set(connectionName, tempMap)
+                    }
+                }
+            }
+        })
+
+        $.when(queryConnection).done(function () {
+            $(document).on('click', ".sidebar-connection", function () {
+                let dataId = $(this);
+                if ($(".layui-tab-title li[lay-id]").length <= 0) {
+                    active.tabAdd(dataId.attr("data-url"), dataId.attr("data-id"), dataId.attr("data-title"));
+                } else {
+                    //否则判断该tab项是否以及存在
+                    var isData = false; //初始化一个标志，为false说明未打开该tab项 为true则说明已有
+                    $.each($(".layui-tab-title li[lay-id]"), function () {
+                        //如果点击左侧菜单栏所传入的id 在右侧tab项中的lay-id属性可以找到，则说明该tab项已经打开
+                        if ($(this).attr("lay-id") == dataId.attr("data-id")) {
+                            isData = true;
+                        }
+                    })
+                    if (isData == false) {
+                        //标志为false 新增一个tab项
+                        active.tabAdd(dataId.attr("data-url"), dataId.attr("data-id"), dataId.attr("data-title"));
+                    }
+                }
+                //最后不管是否新增tab，最后都转到要打开的选项页面上
+                active.tabChange(dataId.attr("data-id"));
+            });
+        })
+
+        let active = {
+            // 在这里给active绑定几项事件，后面可通过active调用这些事件
+            tabAdd: function (url, id, name) {
+                // 新增一个Tab项 传入三个参数，分别对应其标题，tab页面的地址，还有一个规定的id，是标签中data-id的属性值
+                element.tabAdd('connection-tab', {
+                    title: name,
+                    content: '<iframe data-frameid="' + id + '" scrolling="auto" frameborder="0" src="' + url + '" style="width:100%;height:100%;"></iframe>',
+                    id: id
+                })
+                // 计算iframe层的大小
+                FrameWH();
+            },
+            tabChange: function (id) {
+                // 切换到指定Tab项
+                element.tabChange('connection-tab', id); //根据传入的id传入到指定的tab项
+            },
+            tabDelete: function (id) {
+                element.tabDelete("connection-tab", id); //删除
+            }
+        };
+
+        function FrameWH() {
+            let h = $(window).height() - 164;
+            $("iframe").css("height", h + "px");
+        }
+
+        element.on('tab(connection-tab)', function (data) {
+            currentConnectionIndex = data.index
+            currentConnectionName = $(this)[0].innerText
+        });
+
+        // 创建新的连接
+        $(document).on('click', "#create-connection", function () {
+            //input here
+            layer.open({
+                type: 2,
+                title: '编辑连接',
+                shadeClose: true,
+                shade: 0.8,
+                area: ['600px', '50%'],
+                content: 'edit-connection'
+            });
+        });
+        // $(document).on('click', "#try-connection", function () {
+        //     $('iframe[data-frameid$=' + currentConnectionIndex + ']')[0].contentWindow.renderIframe(currentConnectionIndex, connectionMap.get(currentConnectionName))
+        // });
+
+        util.event('lay-database-event', {
+            demo: function (othis) {
+                if (connectionMap.get($(othis)[0].innerText) == null) {
+                    if ($(othis).find('.layui-this').length === 0) {
+
+                    } else {
+                        $('iframe[data-frameid$=' + currentConnectionIndex + ']')[0].contentWindow.renderIframe(currentConnectionIndex, connectionMap.get(currentConnectionName), $(othis).find('.layui-this').find('a')[0].innerText)
+                    }
+                } else {
+                    if (connectionMap.get($(othis)[0].innerText).get('has_databases_rendered')) {
+                    } else {
+                        currentConnectionName = $(othis)[0].innerText
+                        // 获取数据库列表
+                        let getDatabases = $.ajax({
+                            url: "http://localhost:8080/api/execute-sql",
+                            headers: {token: $.cookie('token')},
+                            data: {
+                                'connection-host': connectionMap.get($(othis)[0].innerText).get("connection_host"),
+                                'connection-port': connectionMap.get($(othis)[0].innerText).get("connection_port"),
+                                'connection-database-name': connectionMap.get($(othis)[0].innerText).get("connection_database_name"),
+                                'connection-username': connectionMap.get($(othis)[0].innerText).get("connection_username"),
+                                'connection-password': connectionMap.get($(othis)[0].innerText).get("connection_password"),
+                                'sql': 'show databases'
+                            },
+                            type: "post",
+                            success: function (data) {
+                                if (data.code === 200) {
+                                    let databaseNames = data.data[0]
+                                    $(othis).append('<dl class="layui-nav-child"></dl>');
+                                    for (let i = 0; i < data.data[0].length; i++) {
+                                        $(othis).find('dl').append('<dd id="' + databaseNames[i].databaseName + '"><a>' + databaseNames[i].databaseName + '</a></dd>');
+                                    }
+                                }
+                            }
+                        })
+
+                        connectionMap.get($(othis)[0].innerText).set('has_databases_rendered', true)
+                        $.when(getDatabases).done(function () {
+                            element.render()
+                            layer.msg('数据表获取成功');
+                        })
+
+                    }
+
+                }
+
+            }
+        });
+    });
+</script>
+</body>
+</html>

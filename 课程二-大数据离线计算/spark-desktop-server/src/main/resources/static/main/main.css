@@ -1,0 +1,17 @@
+html {
+    height: 100vh;
+}
+
+#show-window {
+    height: 100vh;
+    overflow-y: auto;
+}
+
+#database-table {
+    margin: 0px 0px;
+}
+
+#command-window {
+    height: 100vh;
+}
+
