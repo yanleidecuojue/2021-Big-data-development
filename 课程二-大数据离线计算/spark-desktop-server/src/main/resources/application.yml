@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+  thymeleaf:
+    prefix: classpath:/templates/
+    check-template-location: true
+    suffix: .html
+    encoding: utf-8
+    servlet:
+      content-type: text/html
+    mode: HTML
+    cache: false
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/spark_ui?serverTimezone=GMT%2B8
+    username: root
+    password: licona-erp-mysql-password
+mybatis-plus:
+  mapper-locations: classpath:licona/club/sparkdesktopserver/mapper/xml/*.xml

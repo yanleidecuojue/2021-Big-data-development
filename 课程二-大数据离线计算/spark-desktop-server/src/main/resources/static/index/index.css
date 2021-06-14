@@ -1,0 +1,18 @@
+html {
+    height: 100%;
+}
+.layui-layout-admin .layui-footer {
+    height: 64px;
+    line-height: 24px;
+    padding: 0 0;
+    text-align: center;
+    background-color: rgb(63, 63, 63);
+    font-size: 12px;
+}
+
+.layui-layout-admin .layui-footer p:nth-child(1) {
+    margin-top: 8px;
+}
+.layui-layout-admin .layui-footer p:nth-child(2) {
+    margin-bottom: 8px;
+}

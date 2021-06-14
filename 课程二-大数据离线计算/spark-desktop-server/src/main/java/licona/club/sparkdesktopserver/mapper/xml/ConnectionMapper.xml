@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="licona.club.sparkdesktopserver.mapper.ConnectionMapper">
+    <insert id="putConnection" parameterType="licona.club.sparkdesktopserver.entity.Connection">
+        insert into connection(uid, connection_name, connection_host, connection_port,
+                               connection_database_name, connection_username, connection_password)
+        values (#{uid}, #{connectionName}, #{connectionHost}, #{connectionPort}, #{connectionDatabaseName},
+                #{connectionUsername}, #{connectionPassword})
+    </insert>
+    <select id="queryUserConnections" resultType="licona.club.sparkdesktopserver.entity.Connection">
+        select *
+        from connection
+        where uid = #{userId}
+    </select>
+</mapper>
