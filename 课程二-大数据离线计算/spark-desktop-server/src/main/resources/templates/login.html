@@ -16,7 +16,7 @@
         <li id="login-tab" class="layui-this">登录</li>
         <li id="register-tab">注册</li>
     </ul>
-    <div class="layui-tab-content">
+    <div class="layui-tab-content" style="padding: 30px 20px">
         <div id="login-form" class="layui-tab-item layui-show">
             <form class="layui-form bg-blue" action="" onclick="return false">
                 <div class="layui-form-item margin-top-10">
@@ -24,43 +24,79 @@
                         <i class="layui-icon">&#xe66f;</i>
                     </label>
                     <div class="layui-input-inline">
-                        <!-- //采用inline表示可以继续放 -->
                         <input type="username" name="username" required lay-verify="username" placeholder="请输入用户名"
-                               autocomplete="off" class="layui-input" lay-verType="msg">
+                               autocomplete="off" class="layui-input">
                     </div>
-                    <!-- <div class="layui-form-mid layui-word-aux"></div> -->
                 </div>
                 <div class="layui-form-item">
                     <label class="layui-form-label">
                         <i class="layui-icon">&#xe672;</i>
                     </label>
                     <div class="layui-input-inline">
-                        <input type="userpassword" name="userpassword" required lay-verify="userpassword"
+                        <input type="password" name="userpassword" required lay-verify="userpassword"
                                placeholder="请输入密码" autocomplete="off" class="layui-input">
                     </div>
                 </div>
                 <div class="layui-form-item">
                     <div class="layui-input-block">
-                        <button class="layui-btn" lay-submit lay-filter="login">立即提交</button>
+                        <button class="layui-btn" lay-submit lay-filter="login">登录</button>
                         <button type="reset" class="layui-btn layui-btn-primary">重置</button>
                     </div>
                 </div>
             </form>
         </div>
-        <div id="register-form" class="layui-tab-item">注册具体内容</div>
+        <div id="register-form" class="layui-tab-item">
+            <form class="layui-form bg-blue" action="" onclick="return false">
+                <div class="layui-form-item margin-top-10">
+                    <label class="layui-form-label">
+                        <i class="layui-icon">&#xe66f;</i>
+                    </label>
+                    <div class="layui-input-inline">
+                        <input type="username" name="username" required lay-verify="username" placeholder="请输入用户名"
+                               autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">
+                        <i class="layui-icon">&#xe672;</i>
+                    </label>
+                    <div class="layui-input-inline">
+                        <input type="password" name="userpassword" required lay-verify="userpassword"
+                               placeholder="请输入密码" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">
+                        <i class="layui-icon">&#xe672;</i>
+                    </label>
+                    <div class="layui-input-inline">
+                        <input type="password" name="userpasswordagain" required lay-verify="userpasswordagain"
+                               placeholder="请再次输入密码" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" lay-submit lay-filter="register">注册</button>
+                        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
     //注意：选项卡 依赖 element 模块，否则无法进行功能性操作
-    layui.use(['element', 'jquery', 'cookie'], function () {
-        let element = layui.element;
+    layui.use(['element', 'jquery', 'cookie', 'layer'], function () {
         let form = layui.form;
         let $ = layui.jquery;
-        let cookie = layui.cookie
+        let layer = layui.layer;
 
+        let username = null
+        let password = null
         form.verify({
             username: function (value, item) {
+                username = value
                 // \u4e00-\u9fa5判断是否为中文
                 if (!new RegExp("^[a-zA-Z0-9_\u4e00-\u9fa5\\s·]+$").test(value)) {
                     return '用户名不能有特殊字符';
@@ -68,25 +104,66 @@
                 if (/^\d+\d+\d$/.test(value)) {
                     return '用户名不能全为数字';
                 }
-
             },
             userpassword: function (value, item) {
+                password = value
                 if (!/^.{8,12}$/img.test(value)) {
                     return "密码必须为8~12位"
+                }
+            },
+            userpasswordagain: function (value, item) {
+                if (value !== password) {
+                    return "两次输入的密码不一样，请重新输入密码"
                 }
             }
         })
 
-        //监听提交
         form.on('submit(login)', function (data) {
             $.ajax({
-                url: "http://localhost:8080/api/login",
+                url: "/api/login",
                 data: data.field,
                 type: "post",
                 success: function (data) {
-                    if(data.code === 200) {
+                    if (data.code === 200) {
                         $.cookie('token', data.token)
+                        $.cookie('username', username)
                         window.location.href = "/index"
+                        return false
+                    }
+                    // 450, 用户不存在
+                    if (data.code === 450) {
+                        layer.msg(data.msg)
+                        return false
+                    }
+                    // 451, 密码错误
+                    if (data.code === 451) {
+                        layer.msg(data.msg)
+                        return false
+                    }
+                }
+            })
+            return false;
+        });
+
+        form.on('submit(register)', function (data) {
+            $.ajax({
+                url: "/api/register",
+                data: data.field,
+                type: "post",
+                success: function (data) {
+                    // 注册成功
+                    if (data.code === 200) {
+                        layer.msg(data.msg)
+                        return false
+                    }
+                    // 450, 用户已经存在
+                    if (data.code === 450) {
+                        layer.msg(data.msg)
+                        return false
+                    }
+                    // 451, 其他原因导致失败
+                    if (data.code === 451) {
+                        layer.msg(data.msg)
                         return false
                     }
                 }

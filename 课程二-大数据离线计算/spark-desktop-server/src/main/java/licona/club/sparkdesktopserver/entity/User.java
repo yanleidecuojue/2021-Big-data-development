@@ -7,6 +7,7 @@ import java.io.Serializable;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 
 /**
  * <p>
@@ -17,6 +18,7 @@ import lombok.EqualsAndHashCode;
  * @since 2021-06-09
  */
 @Data
+@RequiredArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class User implements Serializable {
 

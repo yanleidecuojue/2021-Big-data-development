@@ -57,15 +57,6 @@ public class SparkUtil {
         return preparedstatement.execute( );
     }
 
-    public static void getPrimaryKey(Connection connection, String tableName) throws SQLException {
-        DatabaseMetaData metaData = connection.getMetaData();
-        ResultSet primaryKeys = metaData.getPrimaryKeys(connection.getCatalog(), connection.getSchema(), tableName);
-        while(primaryKeys.next()){
-            String column_name = primaryKeys.getString("COLUMN_NAME");
-            System.out.println(column_name);
-        }
-    }
-
 
     public static void main(String[] args) throws SQLException {
 //        // 只执行一条语句
@@ -87,11 +78,10 @@ public class SparkUtil {
         System.out.println(execute(connection, "use user23_db"));
 
 //        List<Map<String, Object>> queryResult = executeQuery(connection, "select * from t_rk_jbxx t where id>20 order by id asc limit 10");
-        List<Map<String, Object>> maps = executeQuery(connection, "desc lym");
+        List<Map<String, Object>> maps = executeQuery(connection, "select t.* from (select *,( row_number() over (order by sfzhm)) rn from  t_rk_jbxx) t where t.rn between 5 and 7");
         System.out.println(maps.get(0).get("col_name"));
         List<Map<String, Object>> queryResult = executeQuery(connection, "select count(*) from lym");
         System.out.println(queryResult.get(0).get("count(1)"));
-        getPrimaryKey(connection, "t_rk_jbxx");
     }
 }
 

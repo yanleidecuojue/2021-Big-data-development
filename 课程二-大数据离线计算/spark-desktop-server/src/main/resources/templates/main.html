@@ -19,25 +19,34 @@
             <table style="margin-top: 45px" id="database-table"></table>
         </div>
         <div class="layui-col-xs6" id="command-window">
-            <div style="height: 30px;">
-                <button id="run-sqls" style="height: 20px; right: 15px; top: 10px; bottom: 0px; background-color: #ccc; border-radius: 3px"
-                        class="layui-layout-right">运行
-                </button>
+            <div style="height: 30px;" id="run-sqls">
+                <div style="height: 20px; right: 20px; top: 10px; bottom: 0px; background-color: #fff; border-radius: 3px"
+                     class="layui-layout-right">
+                    <svg t="1623662717865" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                         xmlns="http://www.w3.org/2000/svg" p-id="1228" width="20" height="20">
+                        <path d="M512 96C282.624 96 96 282.624 96 512s186.624 416 416 416 416-186.624 416-416S741.376 96 512 96z m0 768c-194.08 0-352-157.92-352-352s157.92-352 352-352 352 157.92 352 352-157.92 352-352 352z"
+                              p-id="1229" fill="#1296db"></path>
+                        <path d="M466.816 324.96A32 32 0 0 0 416 350.848v339.776a32 32 0 0 0 50.816 25.856l233.6-169.888a32 32 0 0 0 0-51.776l-233.6-169.856z"
+                              p-id="1230" fill="#1296db"></path>
+                    </svg>
+                </div>
             </div>
             <div style="height: calc(100vh * 0.4); padding: 0px 10px">
                 <textarea id="prepare-sqls"></textarea>
             </div>
-            <div style="height: calc((100vh * 0.6) - 75px); margin: 15px 10px; overflow-y: auto; font-size: 8px; line-height: 18px" id="result-window"
+            <div style="padding: 15px 15px; height: calc((100vh * 0.6) - 75px); margin: 15px 10px; overflow-y: auto; font-size: 8px; line-height: 18px"
+                 id="result-window"
                  class="layui-bg-cyan"></div>
         </div>
     </div>
 </div>
 <script>
-    layui.use(['layer', 'cookie', 'table', 'dropdown'], function () {
+    layui.use(['layer', 'cookie', 'table', 'dropdown', 'element'], function () {
         let layer = layui.layer;
         let $ = layui.jquery;
         let table = layui.table;
         let dropdown = layui.dropdown;
+        let element = layui.element;
 
         let connections = null
         let currentDatabaseName = null
@@ -46,106 +55,111 @@
         let setTableConstructor = null
         let tablesDropdown = []
 
+        // 保证同一时间只调用一次renderIframe
+        let isRenderIframeRun = false
+
         window.renderIframe = function (index, connectionMap, databaseName) {
-            connections = null
-            connections = connectionMap
-            currentDatabaseName = databaseName
-            let test = $.ajax({
-                url: "http://localhost:8080/api/execute-multi-sql",
-                headers: {token: $.cookie('token')},
-                data: {
-                    'connection-host': connections.get("connection_host"),
-                    'connection-port': connections.get("connection_port"),
-                    'connection-database-name': connections.get("connection_database_name"),
-                    'connection-username': connections.get("connection_username"),
-                    'connection-password': connections.get("connection_password"),
-                    'sql': 'use ' + databaseName + ';show tables'
-                },
-                type: "post",
-                success: function (data) {
-                    if (data.code === 200) {
-                        tablesDropdown.length = 0
-                        for (let j = 0; j < data.data[1].length; j++) {
-                            let tempMap = new Object(null)
-                            tempMap.title = data.data[1][j].tableName
-                            tempMap.id = j
-                            tempMap.href = '#'
-                            tablesDropdown.push(tempMap)
+            if (!isRenderIframeRun) {
+                isRenderIframeRun = true
+                connections = null
+                connections = connectionMap
+                currentDatabaseName = databaseName
+                let test = $.ajax({
+                    url: "http://localhost:8080/api/execute-multi-sql",
+                    headers: {token: $.cookie('token')},
+                    data: {
+                        'connection-host': connections.get("connection_host"),
+                        'connection-port': connections.get("connection_port"),
+                        'connection-database-name': connections.get("connection_database_name"),
+                        'connection-username': connections.get("connection_username"),
+                        'connection-password': connections.get("connection_password"),
+                        'sql': 'use ' + databaseName + ';show tables'
+                    },
+                    type: "post",
+                    success: function (data) {
+                        if (data.code === 200) {
+                            tablesDropdown.length = 0
+                            for (let j = 0; j < data.data[1].length; j++) {
+                                let tempMap = new Object(null)
+                                tempMap.title = data.data[1][j].tableName
+                                tempMap.id = j
+                                tablesDropdown.push(tempMap)
+                            }
                         }
                     }
-                }
-            })
+                })
 
-            $.when(test).done(function () {
-                dropdown.render({
-                    elem: '#show-tables' //可绑定在任意元素中，此处以上述按钮为例
-                    , data: tablesDropdown
-                    , id: 'show-tables'
-                    //菜单被点击的事件
-                    , click: function (obj) {
-                        let tableName = obj.title
-                        currentTableName = tableName
-                        let columns = []
-                        let getTableDesc = $.ajax({
-                            url: "http://localhost:8080/api/execute-multi-sql",
-                            headers: {token: $.cookie('token')},
-                            data: {
-                                'connection-host': connections.get("connection_host"),
-                                'connection-port': connections.get("connection_port"),
-                                'connection-database-name': connections.get("connection_database_name"),
-                                'connection-username': connections.get("connection_username"),
-                                'connection-password': connections.get("connection_password"),
-                                'sql': 'use ' + currentDatabaseName + ';desc ' + tableName
-                            },
-                            type: "post",
-                            success: function (data) {
-                                if (data.code === 200) {
-                                    for (let j = 0; j < data.data[1].length; j++) {
-                                        columns.push(data.data[1][j].col_name)
+                $.when(test).done(function () {
+                    dropdown.render({
+                        elem: '#show-tables',
+                        data: tablesDropdown,
+                        click: function (obj) {
+                            let tableName = obj.title
+                            currentTableName = tableName
+                            let columns = []
+                            let getTableDesc = $.ajax({
+                                url: "http://localhost:8080/api/execute-multi-sql",
+                                headers: {token: $.cookie('token')},
+                                data: {
+                                    'connection-host': connections.get("connection_host"),
+                                    'connection-port': connections.get("connection_port"),
+                                    'connection-database-name': connections.get("connection_database_name"),
+                                    'connection-username': connections.get("connection_username"),
+                                    'connection-password': connections.get("connection_password"),
+                                    'sql': 'use ' + currentDatabaseName + ';desc ' + tableName
+                                },
+                                type: "post",
+                                success: function (data) {
+                                    if (data.code === 200) {
+                                        for (let j = 0; j < data.data[1].length; j++) {
+                                            columns.push(data.data[1][j].col_name)
+                                        }
                                     }
                                 }
-                            }
-                        })
-                        setTableConstructor = $.when(getTableDesc).done(function () {
-                            precessedColumns = []
-                            precessedColumns.push({type: 'checkbox', fixed: 'left'})
-                            for (let i = 0; i < columns.length; i++) {
-                                let tempMap = new Object(null)
-                                tempMap.field = columns[i]
-                                tempMap.title = columns[i]
-                                precessedColumns.push(tempMap)
-                            }
-                        })
+                            })
+                            setTableConstructor = $.when(getTableDesc).done(function () {
+                                precessedColumns = []
+                                precessedColumns.push({type: 'checkbox', fixed: 'left'})
+                                for (let i = 0; i < columns.length; i++) {
+                                    let tempMap = new Object(null)
+                                    tempMap.field = columns[i]
+                                    tempMap.title = columns[i]
+                                    precessedColumns.push(tempMap)
+                                }
+                            })
 
-                        $.when(setTableConstructor).done(function () {
-                            table.render({
-                                elem: "#database-table",
-                                height: 750,
-                                limit: 15,
-                                url: "http://localhost:8080/api/get-table-data",
-                                method: "POST",
-                                headers: {token: $.cookie('token')},
-                                where: {
-                                    "database-name": currentDatabaseName,
-                                    "table-name": currentTableName
-                                },
-                                page: true,
-                                toolbar: true,
-                                cols: [
-                                    precessedColumns
-                                ]
-                            });
-                        })
-                    }
-                });
-            })
+                            $.when(setTableConstructor).done(function () {
+                                table.render({
+                                    elem: "#database-table",
+                                    height: 750,
+                                    limit: 15,
+                                    url: "http://localhost:8080/api/get-table-data",
+                                    method: "POST",
+                                    headers: {token: $.cookie('token')},
+                                    where: {
+                                        "database-name": currentDatabaseName,
+                                        "table-name": currentTableName
+                                    },
+                                    page: true,
+                                    toolbar: true,
+                                    cols: [
+                                        precessedColumns
+                                    ]
+                                });
+                            })
+                        }
+                    });
+                })
+                isRenderIframeRun = false
+            } else {
+
+            }
         }
 
         $(document).on('click', "#run-sqls", function () {
-            console.log($('#prepare-sqls').val())
             let loading = layer.load(0, {
                 shade: false,
-                time: 60 * 1000
+                time: 600 * 1000
             })
             $.ajax({
                 url: "http://localhost:8080/api/execute-multi-sql",
@@ -163,75 +177,36 @@
                     if (data.code === 200) {
                         layer.close(loading)
                         $('#result-window').empty()
-                        for (let i = 0; i < data.data.length; i++) {
-                            $('#result-window').append('<div>'+ formatJson(JSON.stringify(data.data[i])) +'</div>')
+                        for (let i = 1; i < data.data.length; i++) {
+                            if (data.data[i].length == undefined) {
+                                $('#result-window').append('<div>' + JSON.stringify(data.data[i]) + '</div>')
+                            } else {
+                                $('#result-window').append('<table class="layui-table layui-bg-cyan" lay-size="sm" id="' + i + '"><thead></thead><tbody></tbody></table>')
+                                let heads = []
+                                for (let j = 0; j < data.data[i].length; j++) {
+                                    $('#result-window').find('#' + i).find("tbody").append('<tr id="' + (10*i + j) + '"></tr>')
+                                    for (let item in data.data[i][j]) {
+                                        if(j === 0) {
+                                            heads.push(item)
+                                        }
+                                        $('#result-window').find('#' + i).find("tbody").find('#' + (10*i + j)).append('<td style="color: #01AAED">' + data.data[i][j][item] + '</td>')
+                                    }
+                                }
+                                for (let k = 0; k < heads.length; k++) {
+                                    $('#result-window').find('#' + i).find("thead").append('<th>' + heads[k] + '</th>')
+                                }
+                            }
                         }
                     }
                 }
             });
         })
-
-
-        let formatJson = function (v, options) {
-            v = v.replace(/&quot;/g, '"');
-            v = v.replace(/ /g, '');
-            var reg = /(\[|{|,)/g;
-            v = v.replace(reg, function (a, b) {
-                return a + "<br/>";
-            });
-            reg = /(}|\])/g;
-            v = v.replace(reg, function (a, b) {
-                return "<br/>" + a;
-            });
-            reg = /(:\[)/g;
-            v = v.replace(reg, function (a, b) {
-                return a[0] + "<br/>" + a[1];
-            });
-
-            var arr = v.toString().split("<br/>")
-
-            var arr1 = new Array("[", "]");
-            var arr2 = new Array("{", "}");
-            var pre = "";
-            v = "";
-
-            var chr = "&nbsp;&nbsp;";
-            var lth = chr.length;
-            var prev = "";
-            $.each(arr, function (index, item) {
-                if (item == "[" || item == "{") {
-                    if (pre != "}," && index != 0 && index & arr.length) {
-                        prev += chr;
-                    }
-                    v += prev + item + "<br />";
-                } else if (item == "]" || item == "}" || item == "},") {
-                    prev = prev.substr(0, prev.length - lth);
-                    v += prev + item + "<br />";
-                } else {
-                    if (pre == "{") {
-                        prev += chr;
-                    }
-                    v += prev + item + "<br />";
-                }
-
-                pre = item;
-            });
-
-            var reg = /(&nbsp;".\w+")/g;
-            v = v.replace(reg, function (a, b) {
-                return "<span style=\"color:#92278F;\">" + a + "</span>";
-            });
-            reg = /((:\s*\"([^\"]*)\"(,?))|(:\s*(\d+(\.\d)*|null)+[,]?))/g;
-            v = v.replace(reg, function (a, b) {
-                return "<span style=\"color:#3AB54A;\">" + a + "</span>";
-            });
-            return v;
-        };
     });
 </script>
 </body>
 <style>
     textarea {
+        color: #2ae0c8;
         width: calc(100% - 15px);
         height: calc(100% - 20px);
         resize: none;

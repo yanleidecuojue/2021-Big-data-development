@@ -17,6 +17,20 @@
             <li class="layui-nav-item"><a class="" id="create-connection">创建连接</a></li>
             <li class="layui-nav-item"><a class="" id="create-query">新建查询</a></li>
         </ul>
+        <!--用户信息-->
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item layui-hide layui-show-md-inline-block">
+                <a id="username">
+                    <img src="//www.pw.qiniu.licona.club/licona-pw-default-boy-avatar.jpeg" class="layui-nav-img">
+
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a lay-user-event="info">信息</a></dd>
+                    <dd><a lay-user-event="settings">设置</a></dd>
+                    <dd><a lay-user-event="logout">登出</a></dd>
+                </dl>
+            </li>
+        </ul>
     </div>
 
     <div class="layui-side layui-bg-black">
@@ -25,7 +39,8 @@
             </ul>
         </div>
     </div>
-    <div class="layui-tab" lay-filter="connection-tab" lay-allowclose="true" style="margin-left: 200px; margin-top: 60px">
+    <div class="layui-tab" lay-filter="connection-tab" lay-allowclose="true"
+         style="margin-left: 200px; margin-top: 60px">
         <ul class="layui-tab-title"></ul>
         <div style="padding: 0px" class="layui-tab-content"></div>
     </div>
@@ -52,23 +67,30 @@
         let connectionMap = new Map()
         let currentConnectionIndex = null
         let currentConnectionName = null
-        // 检查token是否存在，如果没有定位到登录页面重新获取token
-        if ($.cookie('token') == null) {
+        // 检查token是否存在和置空，如果不存在或为空定位到登录页面重新获取token
+        if ($.cookie('token') === "null" || typeof ($.cookie('token')) === "undefined") {
             window.location.href = "/login"
+        } else {
+            $('#username').append($.cookie('username'))
         }
 
         // 获取当前用户的所有连接信息并在侧边栏进行渲染
+        let loading = layer.load(0, {
+            shade: false,
+            time: 60 * 1000
+        })
         let queryConnection = $.ajax({
             url: "/api/query-connections",
             headers: {token: $.cookie('token')},
             type: "post",
             success: function (data) {
                 if (data.code === 200) {
+                    layer.close(loading)
                     let navHtml = data.connections[0]
                     for (let i = 0; i < navHtml.length; i++) {
                         let connectionName = navHtml[i].connectionName
                         $(window.document).find("#dynamic-nav")
-                            .append('<li lay-database-event="demo" id="' + connectionName + '" class="layui-nav-item sidebar-connection" data-url="main" data-id=' + i + ' data-title=' + connectionName + '><a href="javascript:;">' + connectionName + '</a></li>');
+                            .append('<li lay-database-event="getTables" id="' + connectionName + '" class="layui-nav-item sidebar-connection" data-url="main" data-id=' + i + ' data-title=' + connectionName + '><a>' + connectionName + '</a></li>');
 
                         let tempMap = new Map()
                         tempMap.set('connection_host', navHtml[i].connectionHost)
@@ -140,7 +162,6 @@
 
         // 创建新的连接
         $(document).on('click', "#create-connection", function () {
-            //input here
             layer.open({
                 type: 2,
                 title: '编辑连接',
@@ -150,22 +171,24 @@
                 content: 'edit-connection'
             });
         });
-        // $(document).on('click', "#try-connection", function () {
-        //     $('iframe[data-frameid$=' + currentConnectionIndex + ']')[0].contentWindow.renderIframe(currentConnectionIndex, connectionMap.get(currentConnectionName))
-        // });
 
         util.event('lay-database-event', {
-            demo: function (othis) {
-                if (connectionMap.get($(othis)[0].innerText) == null) {
+            getTables: function (othis) {
+                if (connectionMap.get($(othis)[0].innerText) === undefined) {
                     if ($(othis).find('.layui-this').length === 0) {
 
                     } else {
                         $('iframe[data-frameid$=' + currentConnectionIndex + ']')[0].contentWindow.renderIframe(currentConnectionIndex, connectionMap.get(currentConnectionName), $(othis).find('.layui-this').find('a')[0].innerText)
+                        element.render()
                     }
                 } else {
                     if (connectionMap.get($(othis)[0].innerText).get('has_databases_rendered')) {
                     } else {
                         currentConnectionName = $(othis)[0].innerText
+                        loading = layer.load(0, {
+                            shade: false,
+                            time: 60 * 1000
+                        })
                         // 获取数据库列表
                         let getDatabases = $.ajax({
                             url: "http://localhost:8080/api/execute-sql",
@@ -181,6 +204,8 @@
                             type: "post",
                             success: function (data) {
                                 if (data.code === 200) {
+                                    layer.close(loading)
+                                    layer.msg('获取数据库列表成功')
                                     let databaseNames = data.data[0]
                                     $(othis).append('<dl class="layui-nav-child"></dl>');
                                     for (let i = 0; i < data.data[0].length; i++) {
@@ -189,19 +214,30 @@
                                 }
                             }
                         })
-
                         connectionMap.get($(othis)[0].innerText).set('has_databases_rendered', true)
                         $.when(getDatabases).done(function () {
                             element.render()
-                            layer.msg('数据表获取成功');
                         })
-
                     }
 
                 }
 
             }
         });
+
+        util.event('lay-user-event', {
+            info: function (othis) {
+                layer.msg('当前用户名为' + $.cookie('username'))
+            },
+            settings: function (othis) {
+                layer.msg('您点击了设置按钮')
+            },
+            logout: function (othis) {
+                $.cookie('username', null)
+                $.cookie('token', null)
+                location.reload()
+            }
+        })
     });
 </script>
 </body>
