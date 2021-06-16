@@ -35,4 +35,5 @@ create table user
 #### 演示
 ![img.png](samples/login-register.png)
 ![img.png](samples/create-connection.png)
+![img.png](samples/update-connection.png)
 ![img.png](samples/main.png)

@@ -16,4 +16,6 @@ import java.util.List;
 public interface ConnectionService extends IService<Connection> {
     int putConnection(Connection connection);
     List<Connection> queryUserConnections(String userId);
+    Connection findConnectionByCname(String connectionName);
+    int updateConnection(Connection connection);
 }
