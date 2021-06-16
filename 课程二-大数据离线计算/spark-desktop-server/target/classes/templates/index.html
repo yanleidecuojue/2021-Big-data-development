@@ -15,7 +15,7 @@
         <div class="layui-logo layui-bg-black">Spark Browser</div>
         <ul class="layui-nav layui-layout-left">
             <li class="layui-nav-item"><a class="" id="create-connection">创建连接</a></li>
-            <li class="layui-nav-item"><a class="" id="create-query">新建查询</a></li>
+            <li class="layui-nav-item"><a class="" id="edit-connection">编辑连接</a></li>
         </ul>
         <!--用户信息-->
         <ul class="layui-nav layui-layout-right">
@@ -170,6 +170,22 @@
                 area: ['600px', '50%'],
                 content: 'edit-connection'
             });
+        });
+
+        // 创建新的连接
+        $(document).on('click', "#edit-connection", function () {
+            if (currentConnectionName == null) {
+                layer.msg('请至少选择一个连接')
+            } else {
+                layer.open({
+                    type: 2,
+                    title: '更新当前连接',
+                    shadeClose: true,
+                    shade: 0.8,
+                    area: ['600px', '50%'],
+                    content: 'update-connection?connection-name=' + currentConnectionName
+                });
+            }
         });
 
         util.event('lay-database-event', {

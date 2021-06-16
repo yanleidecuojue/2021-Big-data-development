@@ -9,7 +9,6 @@ public class IndexController {
     @RequestMapping("/index")
     public ModelAndView mv(){
         ModelAndView mv = new ModelAndView("index");
-        mv.addObject("name","yanger");
         return mv;
     }
 }

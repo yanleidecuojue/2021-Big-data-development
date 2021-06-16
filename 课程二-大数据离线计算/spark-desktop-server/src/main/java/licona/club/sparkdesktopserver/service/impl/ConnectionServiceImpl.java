@@ -34,4 +34,14 @@ public class ConnectionServiceImpl extends ServiceImpl<ConnectionMapper, Connect
     public List<Connection> queryUserConnections(String userId) {
         return baseMapper.queryUserConnections(userId);
     }
+
+    @Override
+    public Connection findConnectionByCname(String connectionName) {
+        return baseMapper.selectOne(new QueryWrapper<Connection>().eq("connection_name", connectionName));
+    }
+
+    @Override
+    public int updateConnection(Connection connection) {
+        return baseMapper.update(connection, new QueryWrapper<Connection>().eq("connection_name", connection.getConnectionName()));
+    }
 }
