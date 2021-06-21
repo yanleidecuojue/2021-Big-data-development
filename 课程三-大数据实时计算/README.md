@@ -18,7 +18,7 @@ val stream = text.flatMap {
   .sum(1);
 ```
 **result:**
-![](.\images\1-01.png)
+![](./images/1-01.png)
 
 ##### 实操2
 
