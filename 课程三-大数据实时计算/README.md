@@ -161,7 +161,13 @@ maps.forEach(stringObjectMap -> {
 
 ###### 进阶题(可选)：Kafka Connect 实现MySQL增量自动入流
 
+https://docs.confluent.io/debezium-connect-mysql-source/current/index.html
 
+经验证，此方法可以实现MYSQL增量自动入流
+
+mysql  ----->   Debezium   ----->   Kafka 
+
+[Debezium’s MySQL Connector](https://debezium.io/docs/connectors/mysql/) is a source connector that can record events for each table in a separate Kafka topic, where they can be easily consumed by applications and services.
 
 ##### 实操4
 
