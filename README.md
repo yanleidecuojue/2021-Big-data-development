@@ -67,7 +67,7 @@ big_file - 副本
 
 ### 效果展示
 
-![](.\课程二-大数据离线计算\spark-desktop-server\samples\main.png)
+![](./课程二-大数据离线计算/spark-desktop-server/samples/main.png)
 
 ## 第三周 流式计算小案例
 
